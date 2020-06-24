@@ -12,6 +12,14 @@
         android:layout_height="wrap_content"
         android:text="@string/wifi"
         android:layout_centerInParent="true"/>
+    <Spinner
+        android:layout_alignBaseline="@id/gps_button"
+        android:layout_toRightOf="@+id/gps_button"
+        android:id="@+id/gps_spinner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:entries="@array/gps"
+        />
     <Button
         android:id="@+id/gps_button"
         android:layout_width="wrap_content"
@@ -20,6 +28,14 @@
         android:layout_centerHorizontal="true"
         android:layout_above="@+id/wifi_button"
         />
+    <Spinner
+        android:layout_centerInParent="true"
+        android:layout_toRightOf="@+id/wifi_button"
+        android:id="@+id/wifi_spinner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:entries="@array/wifi"
+        />
     <Button
         android:id="@+id/modem_button"
         android:layout_width="wrap_content"
@@ -27,5 +43,12 @@
         android:text="@string/modem"
         android:layout_centerHorizontal="true"
         android:layout_below="@+id/wifi_button"/>
-
+    <Spinner
+        android:layout_alignBaseline="@id/modem_button"
+        android:layout_toRightOf="@+id/gps_button"
+        android:id="@+id/modem_spinner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:entries="@array/modem"
+        />
 </RelativeLayout>
