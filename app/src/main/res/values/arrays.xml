@@ -2,20 +2,22 @@
 <resources>
 
         <string-array name="wifi">
-            <item>持续使用</item>
-            <item>每分钟1次</item>
-            <item>每分钟10次</item>
-            <item>每10分钟1次</item>
+            <item>间隔0秒</item>
+            <item>间隔120秒</item>
+            <item>间隔240秒</item>
+            <item>间隔600秒</item>
         </string-array>
 
         <string-array name="gps">
-            <item>每分钟1次</item>
-            <item>每10分钟1次</item>
+            <item>间隔120秒</item>
+            <item>间隔240秒</item>
+            <item>间隔600秒</item>
         </string-array>
 
         <string-array name="modem">
-            <item>关闭数据</item>
-            <item>开启数据</item>
+            <item>间隔120秒</item>
+            <item>间隔240秒</item>
+            <item>间隔600秒</item>
         </string-array>
 
 </resources>
