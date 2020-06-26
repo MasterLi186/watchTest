@@ -9,18 +9,29 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.OnNmeaMessageListener;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemClickListener, AdapterView.OnItemSelectedListener {
     private static final String TAG = "MainActivity";
@@ -34,7 +45,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private int wifiTestInterval = 0;
     private int modemTestInterval = 0;
     private LocationManager locationManager;
-
+    private SeekBar seekBar;
+    final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + new Date() + ".apk";
+    private Button wifi;
+    private String downLoadUrl = "https://d1.music.126.net/dmusic/CloudMusic_official_5.4.1.284637.apk";
+    private File apkFile;
+    private File file = new File(Environment.getExternalStorageDirectory(),
+            "test.apk");
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 locationManager.registerGnssStatusCallback(callback);
                 locationManager.addNmeaListener(messageListener);
                 locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                locationManager.removeUpdates(locationListener);
                 Log.i(TAG, "startGpsTest: ");
             } else {
                 Log.i(TAG, "LocationManager.GPS_PROVIDER: false ");
@@ -135,9 +153,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     };
     private void initView() {
         //3个按钮
-        Button wifi = findViewById(R.id.wifi_button);
+        wifi = findViewById(R.id.wifi_button);
         Button gps = findViewById(R.id.gps_button);
         Button modem = findViewById(R.id.modem_button);
+        //初始化seekBar
+        seekBar = findViewById(R.id.seekBar);
+        seekBar.setMax(100);
         //3个Spinner
         wifi_spinner = findViewById(R.id.wifi_spinner);
         gps_spinner = findViewById(R.id.gps_spinner);
@@ -165,17 +186,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onStart() {
         super.onStart();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        checkPermission();
+    }
+
+    private void checkPermission() {
         if (ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)== PackageManager.PERMISSION_GRANTED) {
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)== PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)== PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.INTERNET)== PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE)== PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_WIFI_STATE)== PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)== PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)== PackageManager.PERMISSION_GRANTED
+
+        ) {
             //拥有权限，做你想做的事情
             //ToDo
-            Log.i(TAG, "onStart: ");
+            Log.i(TAG, "有权限: ");
         }else{
             //没有开启权限，向系统申请权限
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+            ActivityCompat.requestPermissions(this, new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.READ_PHONE_STATE,
+                    Manifest.permission.INTERNET,
+                    Manifest.permission.ACCESS_NETWORK_STATE,
+                    Manifest.permission.ACCESS_WIFI_STATE,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+            }, 1);
         }
-
     }
 
     @Override
@@ -183,6 +223,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()){
             case R.id.wifi_button:
                 Log.i(TAG, "wifi_button: ");
+//                download(path);
+                wifi.setClickable(false);
+                wifi.setEnabled(false);
+                new Thread(){
+                    @Override
+                    public void run() {
+                        super.run();
+                        Looper.prepare();
+                        apkFile = getApkFile(downLoadUrl);
+                        if (apkFile.exists()){
+                            Toast.makeText(MainActivity.this,"下载成功",Toast.LENGTH_SHORT).show();
+                        }
+                        Looper.loop();
+                    }
+                }.start();
                 break;
             case R.id.gps_button:
                 Log.i(TAG, "gps_button: ");
@@ -237,6 +292,44 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //未选中时候的操作
     }
 
+    public File getApkFile(String url) {
+        try {
+            URL u = new URL(url);
+            HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(5000);
+
+            if (conn.getResponseCode() == 200) {
+                InputStream is = conn.getInputStream();
+                FileOutputStream os = new FileOutputStream(file);
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = is.read(buffer)) != -1) {
+                    os.write(buffer, 0, len);
+                }
+                os.flush();
+                os.close();
+                is.close();
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.i(TAG, "runOnUiThread: ");
+                        SystemClock.sleep(2000);
+                        wifi.setClickable(true);
+                        wifi.setEnabled(true);
+                        if (file != null && file.length() > 0){
+                            if (file.delete()){
+                                Toast.makeText(MainActivity.this,"删除成功",Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return file;
+    }
     @Override
     protected void onDestroy() {
         super.onDestroy();
