@@ -3,8 +3,8 @@
 
         <string-array name="wifi">
             <item>间隔0秒</item>
+            <item>间隔60秒</item>
             <item>间隔120秒</item>
-            <item>间隔240秒</item>
             <item>间隔600秒</item>
         </string-array>
 
@@ -15,8 +15,9 @@
         </string-array>
 
         <string-array name="modem">
+            <item>间隔0秒</item>
+            <item>间隔60秒</item>
             <item>间隔120秒</item>
-            <item>间隔240秒</item>
             <item>间隔600秒</item>
         </string-array>
 

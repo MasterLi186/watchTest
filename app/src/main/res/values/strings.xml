@@ -3,4 +3,6 @@
     <string name="wifi">wifi</string>
     <string name="gps">gps</string>
     <string name="modem">modem</string>
+    <string name="tv">当前测试</string>
+    <string name="cancel">取消测试</string>
 </resources>

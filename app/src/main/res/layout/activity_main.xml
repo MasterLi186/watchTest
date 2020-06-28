@@ -4,58 +4,100 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
+    <!--LinearLayout水平布局-->
+    <TextView
+        android:id="@+id/tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/layout"
+        android:textSize="20sp"
+        android:layout_centerHorizontal="true"/>
+<LinearLayout
+    android:id="@+id/layout"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_centerInParent="true"
+    >
+    <!--按钮竖排-->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        >
 
-    <Button
-        android:id="@+id/wifi_button"
+        <Button
+            android:id="@+id/gps_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/gps" />
+
+
+        <Spinner
+            android:id="@+id/gps_spinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/gps"
+
+            />
+    </LinearLayout>
+
+    <!--Spinner竖排-->
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/wifi"
-        android:layout_centerInParent="true"/>
-    <Spinner
-        android:layout_alignBaseline="@id/gps_button"
-        android:layout_toEndOf="@+id/gps_button"
-        android:id="@+id/gps_spinner"
+        android:orientation="horizontal"
+        >
+        <Button
+            android:id="@+id/wifi_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/wifi"/>
+
+
+
+        <Spinner
+            android:id="@+id/wifi_spinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/wifi"
+            />
+    </LinearLayout>
+
+
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:entries="@array/gps"
-        />
-    <Button
-        android:id="@+id/gps_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/gps"
-        android:layout_centerHorizontal="true"
-        android:layout_above="@+id/wifi_button"
-        />
-    <Spinner
-        android:layout_centerInParent="true"
-        android:layout_toEndOf="@+id/wifi_button"
-        android:id="@+id/wifi_spinner"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:entries="@array/wifi"
-        />
-    <Button
-        android:id="@+id/modem_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/modem"
-        android:layout_centerHorizontal="true"
-        android:layout_below="@+id/wifi_button"/>
+        android:orientation="horizontal">
+        <Button
+            android:id="@+id/modem_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/modem"/>
+        <Spinner
+            android:id="@+id/modem_spinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/modem"
+            />
+
+    </LinearLayout>
+</LinearLayout>
+
 
     <SeekBar
-        android:layout_below="@id/modem_button"
+        android:layout_below="@+id/layout"
         android:id="@+id/seekBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:padding="20dp" />
-    <Spinner
-        android:layout_alignBaseline="@id/modem_button"
-        android:layout_toEndOf="@+id/gps_button"
-        android:id="@+id/modem_spinner"
+    <Button
+        android:text="@string/cancel"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/seekBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:entries="@array/modem"
-        />
+        android:id="@+id/cancel"/>
+
 </RelativeLayout>

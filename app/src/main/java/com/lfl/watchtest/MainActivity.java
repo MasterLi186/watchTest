@@ -1,17 +1,23 @@
 package com.lfl.watchtest;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.OnNmeaMessageListener;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.Looper;
+import android.os.Message;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -20,8 +26,10 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -29,6 +37,7 @@ import androidx.core.content.ContextCompat;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Date;
@@ -52,12 +61,115 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private File apkFile;
     private File file = new File(Environment.getExternalStorageDirectory(),
             "test.apk");
+    private int cancelTime = 60 * 1000 * 60 ;
+//    private Handler handler = new Handler(){
+//
+//        @Override
+//        public void handleMessage(@NonNull Message msg) {
+//            super.handleMessage(msg);
+//            switch (msg.what){
+//                case 1:
+//                    Log.i(TAG, "WifiEnabled: " + wifiManager.isWifiEnabled());
+//                    Toast.makeText(mContext,"开始下载",Toast.LENGTH_SHORT).show();
+//                    wifi.setClickable(false);
+//                    wifi.setEnabled(false);
+//                    new downLoadThread().start();
+//                    break;
+//                case 2:
+//                    wifi.setClickable(true);
+//                    wifi.setEnabled(true);
+//                    if (file != null && file.length() > 0){
+//                        if (file.delete()){
+//                            Toast.makeText(MainActivity.this,"删除成功",Toast.LENGTH_SHORT).show();
+//                            handler.sendEmptyMessageDelayed(1,wifiTestInterval * 1000);
+//                        }
+//                    }
+//                    break;
+//            }
+//        }
+//    };
+    private Context mContext;
+    private WifiManager wifiManager;
+    private MyHanler myHanler;
+    private Button gps;
+    private Button modem;
+    private Button cancel;
+    private TextView tv;
+    private boolean cancelTest = false;
+    private MainActivity.downLoadThread downLoadThread;
+    private boolean isGpgTest;
+
+    private class MyHanler extends Handler{
+        WeakReference<MainActivity> weakReference;
+        MyHanler(MainActivity mainActivity){
+            weakReference = new WeakReference<>(mainActivity);
+        }
+
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            super.handleMessage(msg);
+            MainActivity mainActivity = weakReference.get();
+            switch (msg.what){
+                case 1:
+                    if (mainActivity != null){
+                        Log.i(TAG, "WifiEnabled: " + mainActivity.wifiManager.isWifiEnabled());
+                        Toast.makeText(mainActivity,"开始下载",Toast.LENGTH_SHORT).show();
+                        mainActivity.wifi.setClickable(false);
+                        mainActivity.wifi.setEnabled(false);
+                        mainActivity.gps.setEnabled(false);
+                        mainActivity.modem.setEnabled(false);
+                        new Thread(){
+                            @Override
+                            public void run() {
+                                super.run();
+                                Looper.prepare();
+                                downLoadThread.run();
+                                Looper.loop();
+                            }
+                        }.start();
+                    }else {
+                        Toast.makeText(mainActivity,"mainActivity = null",Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+                case 2:
+                    if (mainActivity != null){
+                        wifi.setClickable(true);
+                        wifi.setEnabled(true);
+                        if (file != null && file.length() > 0){
+                            if (file.delete()){
+                                Toast.makeText(MainActivity.this,"删除成功",Toast.LENGTH_SHORT).show();
+                                if (!cancelTest){
+                                    sendEmptyMessageDelayed(1,wifiTestInterval * 1000);
+                                }
+                            }
+                        }
+                    }else {
+                        Toast.makeText(mainActivity,"mainActivity = null",Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+                case 6:
+                    if (mainActivity != null){
+                        mainActivity.wifi.setEnabled(true);
+                        mainActivity.gps.setEnabled(true);
+                        mainActivity.modem.setEnabled(true);
+                        if (apkFile != null && apkFile.exists()){
+                            boolean delete = apkFile.delete();
+                            Toast.makeText(MainActivity.this,"删除成功",Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    break;
+            }
+        }
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initView();
         initData();
+        mContext = this;
+        myHanler = new MyHanler(this);
+        downLoadThread = new downLoadThread();
     }
 
     private void startGpsTest() {
@@ -87,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 locationManager.registerGnssStatusCallback(callback);
                 locationManager.addNmeaListener(messageListener);
                 locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                locationManager.removeUpdates(locationListener);
+                //locationManager.removeUpdates(locationListener);
                 Log.i(TAG, "startGpsTest: ");
             } else {
                 Log.i(TAG, "LocationManager.GPS_PROVIDER: false ");
@@ -152,13 +264,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     };
     private void initView() {
-        //3个按钮
+        tv = findViewById(R.id.tv);
+        //4个按钮
         wifi = findViewById(R.id.wifi_button);
-        Button gps = findViewById(R.id.gps_button);
-        Button modem = findViewById(R.id.modem_button);
+        gps = findViewById(R.id.gps_button);
+        modem = findViewById(R.id.modem_button);
+        cancel = findViewById(R.id.cancel);
         //初始化seekBar
         seekBar = findViewById(R.id.seekBar);
         seekBar.setMax(100);
+        seekBar.setEnabled(false);
         //3个Spinner
         wifi_spinner = findViewById(R.id.wifi_spinner);
         gps_spinner = findViewById(R.id.gps_spinner);
@@ -167,6 +282,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         wifi.setOnClickListener(MainActivity.this);
         gps.setOnClickListener(MainActivity.this);
         modem.setOnClickListener(MainActivity.this);
+        cancel.setOnClickListener(MainActivity.this);
         //Spinner点击事件
         wifi_spinner.setOnItemSelectedListener(MainActivity.this);
         gps_spinner.setOnItemSelectedListener(MainActivity.this);
@@ -187,6 +303,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onStart();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         checkPermission();
+        if (apkFile != null){
+            Log.i(TAG, "length: " + apkFile.length());
+        }
     }
 
     private void checkPermission() {
@@ -198,11 +317,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_WIFI_STATE)== PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)== PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)== PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_WIFI_STATE)== PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.CHANGE_WIFI_STATE)== PackageManager.PERMISSION_GRANTED
 
         ) {
             //拥有权限，做你想做的事情
             //ToDo
             Log.i(TAG, "有权限: ");
+            //获取wifi状态
+            wifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
+            if (wifiManager != null) {
+                boolean wifiEnabled = wifiManager.isWifiEnabled();
+//                if (!wifiEnabled){
+//                    startActivity(new Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY));
+//                }
+            }
         }else{
             //没有开启权限，向系统申请权限
             ActivityCompat.requestPermissions(this, new String[]{
@@ -213,38 +342,47 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Manifest.permission.ACCESS_NETWORK_STATE,
                     Manifest.permission.ACCESS_WIFI_STATE,
                     Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.ACCESS_WIFI_STATE,
+                    Manifest.permission.CHANGE_WIFI_STATE
             }, 1);
         }
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.wifi_button:
+                cancelTest = false;
                 Log.i(TAG, "wifi_button: ");
-//                download(path);
-                wifi.setClickable(false);
-                wifi.setEnabled(false);
-                new Thread(){
-                    @Override
-                    public void run() {
-                        super.run();
-                        Looper.prepare();
-                        apkFile = getApkFile(downLoadUrl);
-                        if (apkFile.exists()){
-                            Toast.makeText(MainActivity.this,"下载成功",Toast.LENGTH_SHORT).show();
-                        }
-                        Looper.loop();
-                    }
-                }.start();
+                tv.setText(getString(R.string.tv) + getString(R.string.wifi));
+                myHanler.sendEmptyMessage(1);
                 break;
             case R.id.gps_button:
+                cancelTest = false;
+                isGpgTest = true;
+                tv.setText(getString(R.string.tv) + getString(R.string.gps));
                 Log.i(TAG, "gps_button: ");
                 startGpsTest();
                 break;
             case R.id.modem_button:
+                cancelTest = false;
+                tv.setText(getString(R.string.tv) + getString(R.string.modem));
                 Log.i(TAG, "modem_button: ");
+                myHanler.sendEmptyMessage(1);
+                break;
+            case R.id.cancel:
+                cancelTest = true;
+                if (isGpgTest){
+                    locationManager.removeUpdates(locationListener);
+                    locationManager.removeNmeaListener(messageListener);
+                    locationManager.unregisterGnssStatusCallback(callback);
+                }
+                isGpgTest = false;
+                tv.setText("");
+                seekBar.setProgress(0);
+                myHanler.sendEmptyMessage(6);
                 break;
             default:
                 break;
@@ -271,6 +409,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 String wifiItem = wifiAdapter.getItem(position);
                 if (wifiItem != null) {
                     wifiTestInterval = Integer.parseInt(wifiItem.substring(2, wifiItem.indexOf("秒")));
+                    if (wifiTestInterval == 0){
+                        wifiTestInterval = 1;
+                    }
                 }
                 Log.i(TAG, "wifiTestInterval: " + wifiTestInterval);
                 break;
@@ -278,6 +419,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 String modemItem = modemAdapter.getItem(position);
                 if (modemItem != null) {
                     modemTestInterval = Integer.parseInt(modemItem.substring(2, modemItem.indexOf("秒")));
+                    if (modemTestInterval == 0){
+                        modemTestInterval = 1;
+                    }
                 }
                 Log.i(TAG, "modemTestInterval: " + modemTestInterval);
                 break;
@@ -298,32 +442,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             HttpURLConnection conn = (HttpURLConnection) u.openConnection();
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(5000);
-
+            int contentLength = conn.getContentLength();
+            Log.i(TAG, "getContentLength: " + contentLength);
             if (conn.getResponseCode() == 200) {
                 InputStream is = conn.getInputStream();
                 FileOutputStream os = new FileOutputStream(file);
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[4096];
                 int len;
+                long totalReaded = 0;
                 while ((len = is.read(buffer)) != -1) {
+                    if (cancelTest){
+                        Log.i(TAG, "interrupted: ");
+                        break;
+                    }
+                    totalReaded += len;
+                    long progress = totalReaded * 100 / contentLength;
+                    int i = Long.valueOf(progress).intValue();
+                    seekBar.setProgress(i);
                     os.write(buffer, 0, len);
                 }
                 os.flush();
                 os.close();
                 is.close();
-                MainActivity.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.i(TAG, "runOnUiThread: ");
-                        SystemClock.sleep(2000);
-                        wifi.setClickable(true);
-                        wifi.setEnabled(true);
-                        if (file != null && file.length() > 0){
-                            if (file.delete()){
-                                Toast.makeText(MainActivity.this,"删除成功",Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    }
-                });
+                myHanler.sendEmptyMessage(2);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -338,7 +479,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             locationManager = null;
         }
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        myHanler.removeCallbacksAndMessages(null);
         finish();
         System.exit(0);
+    }
+
+     class downLoadThread implements Runnable{
+        @Override
+        public void run() {
+//            Looper.prepare();
+            Toast.makeText(MainActivity.this, "开始下载", Toast.LENGTH_SHORT).show();
+            apkFile = getApkFile(downLoadUrl);
+            if (apkFile.exists() && !cancelTest) {
+                Toast.makeText(MainActivity.this, "下载成功", Toast.LENGTH_SHORT).show();
+            }
+            if (cancelTest){
+                myHanler.sendEmptyMessage(2);
+            }
+//            Looper.loop();
+        }
     }
 }
