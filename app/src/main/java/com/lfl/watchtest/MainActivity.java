@@ -3,21 +3,13 @@ package com.lfl.watchtest;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.GnssStatus;
-import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.OnNmeaMessageListener;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
-import android.os.SystemClock;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -27,140 +19,43 @@ import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.lang.ref.WeakReference;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemClickListener, AdapterView.OnItemSelectedListener {
-    private static final String TAG = "MainActivity";
-    private Spinner wifi_spinner;
-    private Spinner gps_spinner;
-    private Spinner modem_spinner;
+    static final String TAG = "MainActivity";
+    Spinner wifi_spinner;
+    Spinner gps_spinner;
+    Spinner modem_spinner;
     private ArrayAdapter<String> gpsAdapter;
     private ArrayAdapter<String> wifiAdapter;
     private ArrayAdapter<String> modemAdapter;
-    private int gpsTestInterval = 0;
-    private int wifiTestInterval = 0;
-    private int modemTestInterval = 0;
-    private LocationManager locationManager;
-    private SeekBar seekBar;
-    final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + new Date() + ".apk";
-    private Button wifi;
-    private String downLoadUrl = "https://d1.music.126.net/dmusic/CloudMusic_official_5.4.1.284637.apk";
-    private File apkFile;
-    private File file = new File(Environment.getExternalStorageDirectory(),
+    int gpsTestInterval = 0;
+    int wifiTestInterval = 0;
+    int modemTestInterval = 0;
+    protected LocationManager locationManager;
+    SeekBar seekBar;
+    String downLoadUrl = "https://down.qq.com/qqweb/QQ_1/android_apk/Android_8.3.9.4635_537064751.apk";
+    File file = new File(Environment.getExternalStorageDirectory(),
             "test.apk");
     private int cancelTime = 60 * 1000 * 60 ;
-//    private Handler handler = new Handler(){
-//
-//        @Override
-//        public void handleMessage(@NonNull Message msg) {
-//            super.handleMessage(msg);
-//            switch (msg.what){
-//                case 1:
-//                    Log.i(TAG, "WifiEnabled: " + wifiManager.isWifiEnabled());
-//                    Toast.makeText(mContext,"开始下载",Toast.LENGTH_SHORT).show();
-//                    wifi.setClickable(false);
-//                    wifi.setEnabled(false);
-//                    new downLoadThread().start();
-//                    break;
-//                case 2:
-//                    wifi.setClickable(true);
-//                    wifi.setEnabled(true);
-//                    if (file != null && file.length() > 0){
-//                        if (file.delete()){
-//                            Toast.makeText(MainActivity.this,"删除成功",Toast.LENGTH_SHORT).show();
-//                            handler.sendEmptyMessageDelayed(1,wifiTestInterval * 1000);
-//                        }
-//                    }
-//                    break;
-//            }
-//        }
-//    };
-    private Context mContext;
-    private WifiManager wifiManager;
-    private MyHanler myHanler;
-    private Button gps;
-    private Button modem;
-    private Button cancel;
-    private TextView tv;
-    private boolean cancelTest = false;
-    private MainActivity.downLoadThread downLoadThread;
-    private boolean isGpgTest;
-
-    private class MyHanler extends Handler{
-        WeakReference<MainActivity> weakReference;
-        MyHanler(MainActivity mainActivity){
-            weakReference = new WeakReference<>(mainActivity);
-        }
-
-        @Override
-        public void handleMessage(@NonNull Message msg) {
-            super.handleMessage(msg);
-            MainActivity mainActivity = weakReference.get();
-            switch (msg.what){
-                case 1:
-                    if (mainActivity != null){
-                        Log.i(TAG, "WifiEnabled: " + mainActivity.wifiManager.isWifiEnabled());
-                        Toast.makeText(mainActivity,"开始下载",Toast.LENGTH_SHORT).show();
-                        mainActivity.wifi.setClickable(false);
-                        mainActivity.wifi.setEnabled(false);
-                        mainActivity.gps.setEnabled(false);
-                        mainActivity.modem.setEnabled(false);
-                        new Thread(){
-                            @Override
-                            public void run() {
-                                super.run();
-                                Looper.prepare();
-                                downLoadThread.run();
-                                Looper.loop();
-                            }
-                        }.start();
-                    }else {
-                        Toast.makeText(mainActivity,"mainActivity = null",Toast.LENGTH_SHORT).show();
-                    }
-                    break;
-                case 2:
-                    if (mainActivity != null){
-                        wifi.setClickable(true);
-                        wifi.setEnabled(true);
-                        if (file != null && file.length() > 0){
-                            if (file.delete()){
-                                Toast.makeText(MainActivity.this,"删除成功",Toast.LENGTH_SHORT).show();
-                                if (!cancelTest){
-                                    sendEmptyMessageDelayed(1,wifiTestInterval * 1000);
-                                }
-                            }
-                        }
-                    }else {
-                        Toast.makeText(mainActivity,"mainActivity = null",Toast.LENGTH_SHORT).show();
-                    }
-                    break;
-                case 6:
-                    if (mainActivity != null){
-                        mainActivity.wifi.setEnabled(true);
-                        mainActivity.gps.setEnabled(true);
-                        mainActivity.modem.setEnabled(true);
-                        if (apkFile != null && apkFile.exists()){
-                            boolean delete = apkFile.delete();
-                            Toast.makeText(MainActivity.this,"删除成功",Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                    break;
-            }
-        }
-    }
+    Context mContext;
+    WifiManager wifiManager;
+    MyHanler myHanler;
+    Button wifi;
+    Button gps;
+    Button modem;
+    Button cancel;
+    TextView tv;
+    boolean cancelTest = false;
+    boolean isGpgTest;
+    MyLocationListener locationListener;
+    int useGps = 60 * 1000;
+    int gpsTestCount = 0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -168,12 +63,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initView();
         initData();
         mContext = this;
-        myHanler = new MyHanler(this);
-        downLoadThread = new downLoadThread();
+        myHanler = new MyHanler(this,mContext);
     }
-
-    private void startGpsTest() {
+    protected void startGpsTest() {
+        isGpgTest = true;
+        Log.i(TAG, "gps_button: ");
+        //设置不可点击
+        wifi_spinner.setEnabled(false);
+        gps_spinner.setEnabled(false);
+        modem_spinner.setEnabled(false);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (locationListener == null){
+            locationListener = new MyLocationListener(mContext,MainActivity.this);
+        }
         if (locationManager != null) {
             if (ActivityCompat.checkSelfPermission(this,
                     Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
@@ -195,10 +97,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 // 第2个参数minTime：地理位置更新时发出通知的最小时间间隔
                 // 第3个参数minDistance：地理位置更新发出通知的最小距离，第2和第3个参数的作用关系是“或”的关系，也就是满足任意一个条件都会发出通知。这里第2、3个参数都是0，意味着任何时间，只要位置有变化就会发出通知。
                 // 第4个参数：你的监听器
+                wifi.setEnabled(false);
+                gps.setEnabled(false);
+                modem.setEnabled(false);
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
                 locationManager.registerGnssStatusCallback(callback);
                 locationManager.addNmeaListener(messageListener);
                 locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                //工作usegps秒之后发消息停止gps
+                myHanler.sendEmptyMessageDelayed(3,useGps);
                 //locationManager.removeUpdates(locationListener);
                 Log.i(TAG, "startGpsTest: ");
             } else {
@@ -206,36 +113,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     }
-    private LocationListener locationListener = new LocationListener(){
 
-        @Override
-        public void onLocationChanged(Location location) {
-            double longitude = location.getLongitude();
-            double latitude = location.getLatitude();
-            double altitude = location.getAltitude();
-            Log.i(TAG, "longitude : " + longitude);
-            Log.i(TAG, "latitude : " + latitude);
-            Log.i(TAG, "altitude : " + altitude);
-            Toast.makeText(MainActivity.this,longitude + " , " + latitude + " , " + altitude,Toast.LENGTH_LONG).show();
-        }
 
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-
-        }
-
-        @Override
-        public void onProviderEnabled(String provider) {
-
-        }
-
-        @Override
-        public void onProviderDisabled(String provider) {
-
-        }
-    };
-
-    private GnssStatus.Callback callback = new GnssStatus.Callback() {
+    GnssStatus.Callback callback = new GnssStatus.Callback() {
         @Override
         public void onStarted() {
             super.onStarted();
@@ -257,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     };
 
-    private OnNmeaMessageListener messageListener = new OnNmeaMessageListener() {
+    OnNmeaMessageListener messageListener = new OnNmeaMessageListener() {
         @Override
         public void onNmeaMessage(String message, long timestamp) {
 
@@ -303,9 +183,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onStart();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         checkPermission();
-        if (apkFile != null){
-            Log.i(TAG, "length: " + apkFile.length());
-        }
     }
 
     private void checkPermission() {
@@ -328,9 +205,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             wifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
             if (wifiManager != null) {
                 boolean wifiEnabled = wifiManager.isWifiEnabled();
-//                if (!wifiEnabled){
-//                    startActivity(new Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY));
-//                }
+                if (!wifiEnabled){
+                    //startActivity(new Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY));
+                    Log.i(TAG, "!wifiEnabled");
+                }
             }
         }else{
             //没有开启权限，向系统申请权限
@@ -361,9 +239,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.gps_button:
                 cancelTest = false;
-                isGpgTest = true;
                 tv.setText(getString(R.string.tv) + getString(R.string.gps));
-                Log.i(TAG, "gps_button: ");
+                if (locationListener == null){
+                    locationListener = new MyLocationListener(mContext,MainActivity.this);
+                }
                 startGpsTest();
                 break;
             case R.id.modem_button:
@@ -374,11 +253,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.cancel:
                 cancelTest = true;
-                if (isGpgTest){
-                    locationManager.removeUpdates(locationListener);
-                    locationManager.removeNmeaListener(messageListener);
-                    locationManager.unregisterGnssStatusCallback(callback);
-                }
+                cancelGpsTest();
                 isGpgTest = false;
                 tv.setText("");
                 seekBar.setProgress(0);
@@ -386,6 +261,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             default:
                 break;
+        }
+    }
+
+    private void cancelGpsTest() {
+        try {
+            if (isGpgTest){
+                if (locationManager != null){
+                    locationManager.removeUpdates(locationListener);
+                    locationManager.removeNmeaListener(messageListener);
+                    locationManager.unregisterGnssStatusCallback(callback);
+                }else {
+                    Log.i(TAG, "cancelGpsTest: locationManager == null");
+                }
+                locationManager = null;
+                locationListener = null;
+            }else {
+                Log.i(TAG, "cancelGpsTest: isGpgTest == false");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            StackTraceElement[] stackTrace = e.getStackTrace();
+            for (StackTraceElement stackTraceElement : stackTrace) {
+                Log.e(TAG, "" + stackTraceElement);
+            }
+            Log.e(TAG, "cancelGpsTest Exception: " + e.getMessage());
         }
     }
 
@@ -436,47 +336,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //未选中时候的操作
     }
 
-    public File getApkFile(String url) {
-        try {
-            URL u = new URL(url);
-            HttpURLConnection conn = (HttpURLConnection) u.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(5000);
-            int contentLength = conn.getContentLength();
-            Log.i(TAG, "getContentLength: " + contentLength);
-            if (conn.getResponseCode() == 200) {
-                InputStream is = conn.getInputStream();
-                FileOutputStream os = new FileOutputStream(file);
-                byte[] buffer = new byte[4096];
-                int len;
-                long totalReaded = 0;
-                while ((len = is.read(buffer)) != -1) {
-                    if (cancelTest){
-                        Log.i(TAG, "interrupted: ");
-                        break;
-                    }
-                    totalReaded += len;
-                    long progress = totalReaded * 100 / contentLength;
-                    int i = Long.valueOf(progress).intValue();
-                    seekBar.setProgress(i);
-                    os.write(buffer, 0, len);
-                }
-                os.flush();
-                os.close();
-                is.close();
-                myHanler.sendEmptyMessage(2);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return file;
-    }
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (locationManager != null){
+            locationManager.removeUpdates(locationListener);
+            locationManager.removeNmeaListener(messageListener);
             locationManager.unregisterGnssStatusCallback(callback);
             locationManager = null;
+            locationListener = null;
         }
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         myHanler.removeCallbacksAndMessages(null);
@@ -484,19 +352,4 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         System.exit(0);
     }
 
-     class downLoadThread implements Runnable{
-        @Override
-        public void run() {
-//            Looper.prepare();
-            Toast.makeText(MainActivity.this, "开始下载", Toast.LENGTH_SHORT).show();
-            apkFile = getApkFile(downLoadUrl);
-            if (apkFile.exists() && !cancelTest) {
-                Toast.makeText(MainActivity.this, "下载成功", Toast.LENGTH_SHORT).show();
-            }
-            if (cancelTest){
-                myHanler.sendEmptyMessage(2);
-            }
-//            Looper.loop();
-        }
-    }
 }
