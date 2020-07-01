@@ -39,7 +39,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     int modemTestInterval = 0;
     protected LocationManager locationManager;
     SeekBar seekBar;
-    String downLoadUrl = "https://down.qq.com/qqweb/QQ_1/android_apk/Android_8.3.9.4635_537064751.apk";
+    //String downLoadUrl = "https://down.qq.com/qqweb/QQ_1/android_apk/Android_8.3.9.4635_537064751.apk";
+    String downLoadUrl = "https://fb5751c4c4355325522750ea8fda60e1.dd.cdntips.com/imtt.dd.qq.com/16891/apk/7E582A2A707BB944D17645C67908CB4C.apk?mkey=5efc3941b711c9e0&f=9870&fsname=com.tencent.token_6.9.16_103.apk&csr=1bbd&cip=183.17.239.21&proto=https";
     File file = new File(Environment.getExternalStorageDirectory(),
             "test.apk");
     private int cancelTime = 60 * 1000 * 60 ;
