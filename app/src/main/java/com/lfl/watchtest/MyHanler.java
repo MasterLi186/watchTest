@@ -117,6 +117,7 @@ public class MyHanler extends Handler {
         mainActivity.wifi_spinner.setEnabled(b);
         mainActivity.gps_spinner.setEnabled(b);
         mainActivity.modem_spinner.setEnabled(b);
+        mainActivity.time_spinner.setEnabled(b);
     }
 
 

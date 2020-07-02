@@ -21,4 +21,11 @@
             <item>间隔600秒</item>
         </string-array>
 
+    <string-array name="time">
+        <item>gps上报数据间隔2秒</item>
+        <item>gps上报数据间隔5秒</item>
+        <item>gps上报数据间隔10秒</item>
+    </string-array>
+
+
 </resources>

@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Spinner wifi_spinner;
     Spinner gps_spinner;
     Spinner modem_spinner;
+    Spinner time_spinner;
     private ArrayAdapter<String> gpsAdapter;
     private ArrayAdapter<String> wifiAdapter;
     private ArrayAdapter<String> modemAdapter;
@@ -43,7 +44,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     String downLoadUrl = "https://fb5751c4c4355325522750ea8fda60e1.dd.cdntips.com/imtt.dd.qq.com/16891/apk/7E582A2A707BB944D17645C67908CB4C.apk?mkey=5efc3941b711c9e0&f=9870&fsname=com.tencent.token_6.9.16_103.apk&csr=1bbd&cip=183.17.239.21&proto=https";
     File file = new File(Environment.getExternalStorageDirectory(),
             "test.apk");
-    private int cancelTime = 60 * 1000 * 60 ;
     Context mContext;
     WifiManager wifiManager;
     MyHanler myHanler;
@@ -57,6 +57,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     MyLocationListener locationListener;
     int useGps = 60 * 1000;
     int gpsTestCount = 0;
+    private ArrayAdapter<String> timeAdapter;
+    private int timeTestInterval;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,6 +76,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         wifi_spinner.setEnabled(false);
         gps_spinner.setEnabled(false);
         modem_spinner.setEnabled(false);
+        time_spinner.setEnabled(false);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (locationListener == null){
             locationListener = new MyLocationListener(mContext,MainActivity.this);
@@ -101,14 +105,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 wifi.setEnabled(false);
                 gps.setEnabled(false);
                 modem.setEnabled(false);
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, timeTestInterval, 5, locationListener);
                 locationManager.registerGnssStatusCallback(callback);
                 locationManager.addNmeaListener(messageListener);
                 locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                 //工作usegps秒之后发消息停止gps
                 myHanler.sendEmptyMessageDelayed(3,useGps);
                 //locationManager.removeUpdates(locationListener);
-                Log.i(TAG, "startGpsTest: ");
+                Log.i(TAG, "startGpsTest: " + " timeTestInterval = " + timeTestInterval);
             } else {
                 Log.i(TAG, "LocationManager.GPS_PROVIDER: false ");
             }
@@ -155,10 +159,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         seekBar = findViewById(R.id.seekBar);
         seekBar.setMax(100);
         seekBar.setEnabled(false);
-        //3个Spinner
+        //4个Spinner
         wifi_spinner = findViewById(R.id.wifi_spinner);
         gps_spinner = findViewById(R.id.gps_spinner);
         modem_spinner = findViewById(R.id.modem_spinner);
+        time_spinner = findViewById(R.id.time_spinner);
         //按钮点击事件
         wifi.setOnClickListener(MainActivity.this);
         gps.setOnClickListener(MainActivity.this);
@@ -168,15 +173,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         wifi_spinner.setOnItemSelectedListener(MainActivity.this);
         gps_spinner.setOnItemSelectedListener(MainActivity.this);
         modem_spinner.setOnItemSelectedListener(MainActivity.this);
+        time_spinner.setOnItemSelectedListener(MainActivity.this);
     }
 
     private void initData() {
         gpsAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, getResources().getStringArray(R.array.gps));
         wifiAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, getResources().getStringArray(R.array.wifi));
         modemAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, getResources().getStringArray(R.array.modem));
+        timeAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, getResources().getStringArray(R.array.time));
         gps_spinner.setAdapter(gpsAdapter);
         wifi_spinner.setAdapter(wifiAdapter);
         modem_spinner.setAdapter(modemAdapter);
+        time_spinner.setAdapter(timeAdapter);
     }
 
     @Override
@@ -231,12 +239,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @SuppressLint("SetTextI18n")
     @Override
     public void onClick(View v) {
+        int cancelTime = 60 * 1000 * 60;
         switch (v.getId()){
             case R.id.wifi_button:
                 cancelTest = false;
                 Log.i(TAG, "wifi_button: ");
                 tv.setText(getString(R.string.tv) + getString(R.string.wifi));
                 myHanler.sendEmptyMessage(1);
+                myHanler.sendEmptyMessageDelayed(6, cancelTime);
                 break;
             case R.id.gps_button:
                 cancelTest = false;
@@ -245,12 +255,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     locationListener = new MyLocationListener(mContext,MainActivity.this);
                 }
                 startGpsTest();
+                myHanler.sendEmptyMessageDelayed(6, cancelTime);
                 break;
             case R.id.modem_button:
                 cancelTest = false;
                 tv.setText(getString(R.string.tv) + getString(R.string.modem));
                 Log.i(TAG, "modem_button: ");
                 myHanler.sendEmptyMessage(1);
+                myHanler.sendEmptyMessageDelayed(6, cancelTime);
                 break;
             case R.id.cancel:
                 cancelTest = true;
@@ -325,6 +337,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 }
                 Log.i(TAG, "modemTestInterval: " + modemTestInterval);
+                break;
+            case R.id.time_spinner:
+                String timeItem = timeAdapter.getItem(position);
+                if (timeItem != null) {
+                    timeTestInterval = Integer.parseInt(timeItem.substring(9, timeItem.indexOf("秒")));
+                }
+                Log.i(TAG, "timeTestInterval: " + timeTestInterval);
                 break;
             default:
                 break;
