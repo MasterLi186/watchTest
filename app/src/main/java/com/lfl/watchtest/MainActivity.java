@@ -315,6 +315,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 String gpsItem = gpsAdapter.getItem(position);
                 if (gpsItem != null) {
                     gpsTestInterval = Integer.parseInt(gpsItem.substring(2, gpsItem.indexOf("秒")));
+                    if (gpsTestInterval == 0){
+                        gpsTestInterval = 1;
+                    }
                 }
                 Log.i(TAG, "gpsTestInterval: " + gpsTestInterval);
                 break;
